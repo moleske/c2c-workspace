@@ -33,6 +33,10 @@ ln -sf $(pwd)/Brewfile ${HOME}/.Brewfile
 brew bundle --global
 brew bundle cleanup
 
+echo "Add java versions to jenv"
+jenv add /Library/Java/JavaVirtualMachines/jdk1.8.0_192.jdk/Contents/Home/
+jenv add /Library/Java/JavaVirtualMachines/openjdk-11.0.1.jdk/Contents/Home
+
 echo "Updating pip"
 pip3 install --upgrade pip
 
@@ -64,8 +68,8 @@ nvim -c "GoInstallBinaries" -c "qall!" --headless /tmp/foo.go
 echo "Add yamllint for neomake..."
 pip3 install -q yamllint
 
-echo "Symlink the git-authors file to .git-authors..."
-ln -sf $(pwd)/git-authors ${HOME}/.git-authors
+echo "Symlink the git-together file to .git-together..."
+ln -sf $(pwd)/git-together ${HOME}/.git-together
 
 echo "Copy the shared.bash file into .bash_profile"
 ln -sf $(pwd)/shared.bash ${HOME}/.bash_profile
@@ -75,6 +79,9 @@ cp -rf $(pwd)/gitconfig ${HOME}/.gitconfig
 
 echo "Copy the inputrc file into ~/.inputrc..."
 ln -sf $(pwd)/inputrc ${HOME}/.inputrc
+
+echo "Configuring iTerm"
+cp com.googlecode.iterm2.plist ~/Library/Preferences
 
 echo "Link global .gitignore"
 ln -sf $(pwd)/global-gitignore ${HOME}/.global-gitignore
@@ -115,9 +122,6 @@ fi
 cp $(pwd)/ssh_config ${HOME}/.ssh/config
 chmod 0644 ${HOME}/.ssh/config
 
-echo "Setting up spectacle..."
-cp -f "$(pwd)/com.divisiblebyzero.Spectacle.plist" "${HOME}/Library/Preferences/"
-
 echo "Creating go/src and workspace..."
 go_src=${HOME}/go/src
 if [ ! -e ${go_src} ]; then
@@ -136,9 +140,6 @@ GOPATH="${HOME}/go" go get -u github.com/cf-container-networking/bosh-target
 
 echo "Install cf-target..."
 GOPATH="${HOME}/go" go get -u github.com/dbellotti/cf-target
-
-echo "Install hclfmt..."
-GOPATH="${HOME}/go" go get -u github.com/fatih/hclfmt
 
 echo "Install ginkgo..."
 GOPATH="${HOME}/go" go get -u github.com/onsi/ginkgo/ginkgo
@@ -162,5 +163,29 @@ if [ -z "$(fly -v)" ]; then
   mv fly_darwin_amd64 /usr/local/bin/fly
   chmod +x /usr/local/bin/fly
 fi
+
+echo "Install git hooks for cred-alert-cli"
+HOOKS_DIRECTORY=$HOME/workspace/git-hooks-core
+if [ ! -d $HOOKS_DIRECTORY ]; then
+  echo
+  echo "Installing git hooks for cred-alert"
+  # for more information see https://github.com/pivotal-cf/git-hooks-core
+  git clone https://github.com/pivotal-cf/git-hooks-core $HOOKS_DIRECTORY
+  git config --global --add core.hooksPath $HOOKS_DIRECTORY
+else
+  echo
+  echo "Updating git-hooks for cred-alert"
+  pushd $HOOKS_DIRECTORY
+  git pull -r
+  popd
+fi
+
+# install cred-alert-cli
+echo "Install cred-alert-cli"
+os_name=$(uname | awk '{print tolower($1)}')
+curl -o cred-alert-cli \
+  https://s3.amazonaws.com/cred-alert/cli/current-release/cred-alert-cli_${os_name}
+chmod 755 cred-alert-cli
+mv cred-alert-cli /usr/local/bin # <= or other directory in ${PATH}
 
 echo "Workstation setup complete, open a new window to apply all settings"

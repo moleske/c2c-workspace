@@ -2,7 +2,7 @@
   st = status
   di = diff
   co = checkout
-  ci = duet-commit
+  ci = commit
   br = branch
   sta = stash
   llog = "log --date=local"
@@ -16,14 +16,13 @@
   squash = "commit --squash"
   unstage = "reset HEAD"
   rum = "rebase master@{u}"
-  drb = rebase -i --exec 'git duet-commit --amend --reset-author'
   su = submodule update --init --recursive
 [core]
   editor = nvim
   excludesfile = ~/.shared-gitignore
-[url "git@github.com:"]
-  pushInsteadOf = https://github.com/
-  pushInsteadOf = git://github.com/
+# [url "git@github.com:"]
+#   pushInsteadOf = https://github.com/
+#   pushInsteadOf = git://github.com/
 [push]
   default = simple
   recurseSubmodules = check
@@ -42,6 +41,5 @@
 	allowed = [fF][aA][kK][eE]
 	allowed = [eE][xX][aA][mM][pP][lL][eE]
   allowed = REPLACE
-[user]
-	email = cf-container-networking@pivotal.io
-	name = CF Container Networking Team
+[include]
+  path = /Users/pivotal/.git-together

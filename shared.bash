@@ -18,11 +18,10 @@ function main() {
     alias gp="git push"
     alias ga="git add"
 
-    alias gbt="gobosh_target"
-    alias gbtl="gobosh_target_lite"
-    alias cft="cf_target"
-    alias cftl="cf_target local"
-    alias t="target"
+    # alias gbt="gobosh_target"
+    # alias cft="cf_target"
+    # alias cftl="cf_target local"
+    # alias t="target"
 
     alias rg="ag"
 
@@ -50,6 +49,10 @@ function main() {
 
   function setup_rbenv() {
     eval "$(rbenv init -)"
+  }
+
+  function setup_jenv() {
+    eval "$(jenv init -)"
   }
 
   function setup_aws() {
@@ -129,26 +132,6 @@ function reload() {
   source "${HOME}/.bash_profile"
 }
 
-function reinstall() {
-  local workspace
-  workspace="~/workspace/c2c-workspace"
-
-  if [[ ! -d "${workspace}" ]]; then
-    git clone https://github.com/cloudfoundry-incubator/c2c-workspace "${workspace}"
-  fi
-
-  pushd "${workspace}" > /dev/null
-    git diff --exit-code > /dev/null
-    if [[ "$?" = "0" ]]; then
-      git pull -r
-      bash -c "./install.sh"
-    else
-      echo "Cannot reinstall. There are unstaged changes in the c2c-workspace repo."
-      git diff
-    fi
-  popd > /dev/null
-}
-
 function cf_bosh_lite {
     if (( $# == 0 ))
 			then echo usage: cf_bosh_lite password;
@@ -161,18 +144,17 @@ function cf_create_org {
 		cf create-org o && cf t -o o && cf create-space s && cf t -o o -s s
 }
 
-function bosh_ssh_c2c {
-  if (( $# != 1 ))
-    then echo "Usage: bosh_ssh_c2c <env>"
-  else
-    bosh target bosh.$1.c2c.cf-app.com
-    bosh download manifest $1-diego /tmp/$1-diego.yml
-    bosh -d /tmp/$1-diego.yml ssh --gateway_host bosh.$1.c2c.cf-app.com --gateway_user vcap --gateway_identity_file ~/workspace/cf-networking-deployments/environments/$1/keypair/id_rsa_bosh
-  fi
-}
+# function bosh_ssh_c2c {
+#   if (( $# != 1 ))
+#     then echo "Usage: bosh_ssh_c2c <env>"
+#   else
+#     bosh target bosh.$1.c2c.cf-app.com
+#     bosh download manifest $1-diego /tmp/$1-diego.yml
+#     bosh -d /tmp/$1-diego.yml ssh --gateway_host bosh.$1.c2c.cf-app.com --gateway_user vcap --gateway_identity_file ~/workspace/cf-networking-deployments/environments/$1/keypair/id_rsa_bosh
+#   fi
+# }
 
-cf_target ()
-{
+cf_target () {
   if [ $# = 0 ]; then
     echo "missing environment-name"
     echo ""
@@ -187,12 +169,12 @@ cf_target ()
     echo "no CF deployed in ci env."
     return
   fi
-
-  if [ "$env" = "local" ] || [ "$env" = "lite" ]; then
-    password=$(grep cf_admin_password "${HOME}/workspace/cf-networking-deployments/environments/${env}/deployment-vars.yml" | cut -d" " -f2)
-  else
+  
+  # if [ "$env" = "local" ] || [ "$env" = "lite" ]; then
+  #   password=$(grep cf_admin_password "${HOME}/workspace/cf-networking-deployments/environments/${env}/deployment-vars.yml" | cut -d" " -f2)
+  # else
     password=$(credhub get -n "/bosh-${env}/cf/cf_admin_password" | bosh int --path /value -)
-  fi
+  # fi
 
   if [ "$workspace" = "routing" ]; then
     system_domain="${env}.routing.cf-app.com"
@@ -206,111 +188,92 @@ cf_target ()
   cf auth admin "${password}"
 }
 
-gobosh_target ()
-{
-  gobosh_untarget
-  if [ $# = 0 ]; then
-    return
-  fi
-  export BOSH_ENV=$1
-  if [ "$BOSH_ENV" = "local" ] || [ "$BOSH_ENV" = "lite" ]; then
-    gobosh_target_lite
-    return
-  fi
+# what makes sense for geode/gemfire?
+# gobosh_target ()
+# {
+#   gobosh_untarget
+#   if [ $# = 0 ]; then
+#     return
+#   fi
+#   export BOSH_ENV=$1
+#   if [ "$BOSH_ENV" = "local" ] || [ "$BOSH_ENV" = "lite" ]; then
+#     gobosh_target_lite
+#     return
+#   fi
 
-  if [[ "${BOSH_ENV}" == "ci" ]]; then
-    pushd $(mktemp -d) > /dev/null
-      gsutil cp gs://c2c-bbl-states/ci ci.tgz
-      tar xf ci.tgz
-      eval "$(bbl print-env)"
-    popd > /dev/null
-    export BOSH_DEPLOYMENT="concourse"
-    return
-  fi
+#   if [[ "${BOSH_ENV}" == "ci" ]]; then
+#     pushd $(mktemp -d) > /dev/null
+#       gsutil cp gs://c2c-bbl-states/ci ci.tgz
+#       tar xf ci.tgz
+#       eval "$(bbl print-env)"
+#     popd > /dev/null
+#     export BOSH_DEPLOYMENT="concourse"
+#     return
+#   fi
 
-  workspace=$2
-  if [ "$workspace" = "pcf" ]; then
-    export BOSH_DIR=~/workspace/pcf-networking-deployments/environments/$BOSH_ENV
-  elif [ "$workspace" = "routing" ]; then
-    export BOSH_DIR=~/workspace/deployments-routing/$BOSH_ENV/bbl-state
-  else
-    export BOSH_DIR=~/workspace/cf-networking-deployments/environments/$BOSH_ENV
-  fi
+#   workspace=$2
+#   if [ "$workspace" = "pcf" ]; then
+#     export BOSH_DIR=~/workspace/pcf-networking-deployments/environments/$BOSH_ENV
+#   elif [ "$workspace" = "routing" ]; then
+#     export BOSH_DIR=~/workspace/deployments-routing/$BOSH_ENV/bbl-state
+#   else
+#     export BOSH_DIR=~/workspace/cf-networking-deployments/environments/$BOSH_ENV
+#   fi
 
-  pushd $BOSH_DIR 1>/dev/null
-      eval "$(bbl print-env)"
-  popd 1>/dev/null
+#   pushd $BOSH_DIR 1>/dev/null
+#       eval "$(bbl print-env)"
+#   popd 1>/dev/null
 
-  export BOSH_DEPLOYMENT="cf"
-}
+#   export BOSH_DEPLOYMENT="cf"
+# }
 
-gobosh_untarget ()
-{
-  unset BOSH_ENV
-  unset BOSH_DIR
-  unset BOSH_USER
-  unset BOSH_PASSWORD
-  unset BOSH_ENVIRONMENT
-  unset BOSH_GW_HOST
-  unset BOSH_GW_PRIVATE_KEY
-  unset BOSH_CA_CERT
-  unset BOSH_DEPLOYMENT
-  unset BOSH_CLIENT
-  unset BOSH_CLIENT_SECRET
-}
+# gobosh_untarget ()
+# {
+#   unset BOSH_ENV
+#   unset BOSH_DIR
+#   unset BOSH_USER
+#   unset BOSH_PASSWORD
+#   unset BOSH_ENVIRONMENT
+#   unset BOSH_GW_HOST
+#   unset BOSH_GW_PRIVATE_KEY
+#   unset BOSH_CA_CERT
+#   unset BOSH_DEPLOYMENT
+#   unset BOSH_CLIENT
+#   unset BOSH_CLIENT_SECRET
+# }
 
-target ()
-{
-  gobosh_target ${@}
-  cf_target ${@}
-}
+# target ()
+# {
+#   gobosh_target ${@}
+#   cf_target ${@}
+# }
 
-gobosh_target_lite ()
-{
-  gobosh_untarget
-  export BOSH_DIR=~/workspace/cf-networking-deployments/environments/local
+# readd_local_route ()
+# {
+#   ips="10.244.0.0/16"
+#   gw="192.168.50.6"
+#   sudo route delete -net "$ips" "$gw"
+#   sudo route add -net "$ips" "$gw"
+# }
+# ssh_bosh_lite_director ()
+# {
+#   local creds=~/workspace/cf-networking-deployments/environments/local/creds.yml
+#   bosh int $creds --path /jumpbox_ssh/private_key > /tmp/jumpbox.key
+#   chmod 600 /tmp/jumpbox.key
+#   ssh jumpbox@192.168.50.6 -i /tmp/jumpbox.key
+# }
 
-  pushd $BOSH_DIR >/dev/null
-    export BOSH_CLIENT="admin"
-    export BOSH_CLIENT_SECRET="$(bosh int ./creds.yml --path /admin_password)"
-    export BOSH_ENVIRONMENT="vbox"
-    export BOSH_CA_CERT=/tmp/bosh-lite-ca-cert
-    bosh int ./creds.yml --path /director_ssl/ca > $BOSH_CA_CERT
-  popd 1>/dev/null
-  unset BOSH_ALL_PROXY
+# gobosh_build_manifest ()
+# {
+#   bosh -d cf build-manifest -l=$BOSH_DIR/deployment-env-vars.yml --var-errs ~/workspace/cf-deployment/cf-deployment.yml
+# }
 
-  export BOSH_DEPLOYMENT=cf;
-  if [ "$env" = "ci" ]; then
-    export BOSH_DEPLOYMENT=concourse
-  fi
-}
-
-readd_local_route ()
-{
-  ips="10.244.0.0/16"
-  gw="192.168.50.6"
-  sudo route delete -net "$ips" "$gw"
-  sudo route add -net "$ips" "$gw"
-}
-ssh_bosh_lite_director ()
-{
-  local creds=~/workspace/cf-networking-deployments/environments/local/creds.yml
-  bosh int $creds --path /jumpbox_ssh/private_key > /tmp/jumpbox.key
-  chmod 600 /tmp/jumpbox.key
-  ssh jumpbox@192.168.50.6 -i /tmp/jumpbox.key
-}
-
-gobosh_build_manifest ()
-{
-  bosh -d cf build-manifest -l=$BOSH_DIR/deployment-env-vars.yml --var-errs ~/workspace/cf-deployment/cf-deployment.yml
-}
-
-gobosh_patch_manifest ()
-{
-  pushd ~/workspace/cf-deployment 1>/dev/null
-    git apply ../cf-networking-ci/netman-cf-deployment.patch
-  popd 1>/dev/null
-}
+# gobosh_patch_manifest ()
+# {
+#   pushd ~/workspace/cf-deployment 1>/dev/null
+#     git apply ../cf-networking-ci/netman-cf-deployment.patch
+#   popd 1>/dev/null
+# }
 
 extract_manifest ()
 {
@@ -322,110 +285,35 @@ create_upload ()
   bosh create-release --force --timestamp-version && bosh upload-release
 }
 
-upload_bosh_stemcell () {
-  STEMCELL_VERSION="$(bosh int ~/workspace/cf-deployment/cf-deployment.yml --path=/stemcells/0/version)"
-  echo "will upload stemcell ${STEMCELL_VERSION}"
-  bosh -e vbox upload-stemcell "https://bosh.io/d/stemcells/bosh-warden-boshlite-ubuntu-trusty-go_agent?v=${STEMCELL_VERSION}"
-}
+# upload_bosh_stemcell () {
+#   STEMCELL_VERSION="$(bosh int ~/workspace/cf-deployment/cf-deployment.yml --path=/stemcells/0/version)"
+#   echo "will upload stemcell ${STEMCELL_VERSION}"
+#   bosh -e vbox upload-stemcell "https://bosh.io/d/stemcells/bosh-warden-boshlite-ubuntu-trusty-go_agent?v=${STEMCELL_VERSION}"
+# }
 
-deploy_bosh_lite ()
-{
-  bosh deploy --no-redact -n ~/workspace/cf-deployment/cf-deployment.yml \
-  -o ~/workspace/cf-deployment/operations/bosh-lite.yml \
-  -o ~/workspace/cf-networking-deployments/environments/local/instance-count-overrides.yml \
-  -o ~/workspace/cf-deployment/operations/enable-service-discovery.yml \
-  -o ~/workspace/cf-networking-release/manifest-generation/opsfiles/use-latest.yml \
-  -o ~/workspace/silk-release/opsfiles/use-latest.yml \
-  -o $BOSH_DIR/opsfile.yml \
-  --vars-store ~/workspace/cf-networking-deployments/environments/local/deployment-vars.yml \
-  -v system_domain=bosh-lite.com
-}
+# gobosh_deploy ()
+# {
+#   bosh deploy -n ~/workspace/cf-deployment/cf-deployment.yml \
+#   -o ~/workspace/cf-deployment/operations/use-compiled-releases.yml \
+#   -o ~/workspace/cf-networking-release/manifest-generation/opsfiles/cf-networking.yml \
+#   -o ~/workspace/cf-networking-release/manifest-generation/opsfiles/use-latest.yml \
+#   -o $BOSH_DIR/opsfile.yml \
+#   --vars-store $BOSH_DIR/vars-store.yml \
+#   -v system_domain=$(echo "${BOSH_DIR}" | cut -f 7 -d '/').c2c.cf-app.com
+# }
 
-gobosh_deploy ()
-{
-  bosh deploy -n ~/workspace/cf-deployment/cf-deployment.yml \
-  -o ~/workspace/cf-deployment/operations/use-compiled-releases.yml \
-  -o ~/workspace/cf-networking-release/manifest-generation/opsfiles/cf-networking.yml \
-  -o ~/workspace/cf-networking-release/manifest-generation/opsfiles/use-latest.yml \
-  -o $BOSH_DIR/opsfile.yml \
-  --vars-store $BOSH_DIR/vars-store.yml \
-  -v system_domain=$(echo "${BOSH_DIR}" | cut -f 7 -d '/').c2c.cf-app.com
-}
+# unbork_consul ()
+# {
+#   bosh vms | grep consul | cut -d ' ' -f1 > /tmp/consul-vms
+#   cat /tmp/consul-vms | xargs -n1 bosh ssh -c "sudo /var/vcap/bosh/bin/monit stop consul_agent"
+#   cat /tmp/consul-vms | xargs -n1 bosh ssh -c "sudo rm -rf /var/vcap/store/consul_agent/*"
+#   cat /tmp/consul-vms | xargs -n1 bosh ssh -c "sudo /var/vcap/bosh/bin/monit start consul_agent"
+# }
 
-create_bosh_lite ()
-{
-    gobosh_target_lite;
-    bosh create-env ~/workspace/bosh-deployment/bosh.yml \
-    --state ~/workspace/cf-networking-deployments/environments/local/state.json \
-    -o ~/workspace/bosh-deployment/virtualbox/cpi.yml \
-    -o ~/workspace/bosh-deployment/virtualbox/outbound-network.yml \
-    -o ~/workspace/bosh-deployment/bosh-lite.yml \
-    -o ~/workspace/bosh-deployment/bosh-lite-runc.yml \
-    -o ~/workspace/bosh-deployment/jumpbox-user.yml \
-    -o ~/workspace/bosh-deployment/local-dns.yml \
-    --vars-store ~/workspace/cf-networking-deployments/environments/local/creds.yml \
-    -v director_name="Bosh Lite Director" \
-    -v internal_ip=192.168.50.6 \
-    -v internal_gw=192.168.50.1 \
-    -v internal_cidr=192.168.50.0/24 \
-    -v outbound_network_name="NatNetwork"
-
-    bosh -e 192.168.50.6 --ca-cert <(bosh int ~/workspace/cf-networking-deployments/environments/local/creds.yml --path /director_ssl/ca) alias-env vbox
-    export BOSH_CLIENT="admin"
-    export BOSH_CLIENT_SECRET="$(bosh int ~/workspace/cf-networking-deployments/environments/local/creds.yml --path /admin_password)"
-    export BOSH_ENVIRONMENT="vbox"
-    export BOSH_DEPLOYMENT="cf"
-    export BOSH_CA_CERT="/tmp/bosh-lite-ca-cert"
-    bosh int ~/workspace/cf-networking-deployments/environments/local/creds.yml --path /director_ssl/ca > ${BOSH_CA_CERT}
-
-    STEMCELL_VERSION="$(bosh int ~/workspace/cf-deployment/cf-deployment.yml --path=/stemcells/0/version)"
-    echo "will upload stemcell ${STEMCELL_VERSION}"
-    bosh -e vbox upload-stemcell "https://bosh.io/d/stemcells/bosh-warden-boshlite-ubuntu-trusty-go_agent?v=${STEMCELL_VERSION}"
-
-    bosh -e vbox -n update-cloud-config ~/workspace/cf-deployment/iaas-support/bosh-lite/cloud-config.yml
-}
-
-delete_bosh_lite ()
-{
-    bosh delete-env ~/workspace/bosh-deployment/bosh.yml \
-    --state ~/workspace/cf-networking-deployments/environments/local/state.json \
-    -o ~/workspace/bosh-deployment/virtualbox/cpi.yml \
-    -o ~/workspace/bosh-deployment/virtualbox/outbound-network.yml \
-    -o ~/workspace/bosh-deployment/bosh-lite.yml \
-    -o ~/workspace/bosh-deployment/bosh-lite-runc.yml \
-    -o ~/workspace/bosh-deployment/jumpbox-user.yml \
-    --vars-store ~/workspace/cf-networking-deployments/environments/local/creds.yml \
-    -v director_name="Bosh Lite Director" \
-    -v internal_ip=192.168.50.6 \
-    -v internal_gw=192.168.50.1 \
-    -v internal_cidr=192.168.50.0/24 \
-    -v outbound_network_name="NatNetwork"
-}
-
-unbork_consul ()
-{
-  bosh vms | grep consul | cut -d ' ' -f1 > /tmp/consul-vms
-  cat /tmp/consul-vms | xargs -n1 bosh ssh -c "sudo /var/vcap/bosh/bin/monit stop consul_agent"
-  cat /tmp/consul-vms | xargs -n1 bosh ssh -c "sudo rm -rf /var/vcap/store/consul_agent/*"
-  cat /tmp/consul-vms | xargs -n1 bosh ssh -c "sudo /var/vcap/bosh/bin/monit start consul_agent"
-}
-
-
-function windows_port_forward() {
-  echo "Port forwarding from $1"
-  ssh -f -L 3389:$1:3389 -N -i ${BOSH_GW_PRIVATE_KEY} ${BOSH_GW_USER}@${BOSH_GW_HOST}
-}
-
-function story() {
-  if [ -n "$TRACKER_API_TOKEN" ]; then
-    STORY_TITLE=" $(curl -s -H "X-TrackerToken: $TRACKER_API_TOKEN" \
-      "https://www.pivotaltracker.com/services/v5/projects/$TRACKER_PROJECT/stories/${1/\#/}" \
-      | jq -r .name)"
-  else
-    STORY_TITLE=''
-  fi
-  printf "\n\n[$1]$STORY_TITLE" > ~/.git-tracker-story
-}
+# function windows_port_forward() {
+#   echo "Port forwarding from $1"
+#   ssh -f -L 3389:$1:3389 -N -i ${BOSH_GW_PRIVATE_KEY} ${BOSH_GW_USER}@${BOSH_GW_HOST}
+# }
 
 default_hours() {
   local current_hour=$(date +%H | sed 's/^0//')
@@ -467,75 +355,6 @@ set-git-keys() {
     lpass login "$email"
   fi
   set_key ${hours}
-}
-
-function current_branch() { # Gets current branch
-  git rev-parse --abbrev-ref HEAD
-}
-function parse_branch() { # Gets current branch with parens around it for some legacy things
-  git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
-}
-function gh_remote_path() { # Parses the 'remote path' of the repo: username/repo
-  REMOTE=${1:-origin}
-
-  GH_PATH=`git remote -v | tr ':' ' ' | tr '.' ' ' | grep $REMOTE | awk '/push/ {print $4}'`
-  echo ${GH_PATH#com/}
-}
-function gh() { # Opens current branch on Github, works for all repos
-  REMOTE=${1:-origin}
-
-  echo 'Opening branch on Github...'
-  open "https://github.com/$(gh_remote_path $REMOTE)/tree/$(current_branch)"
-}
-function newpr() { # Opens current branch on Github in the "Open a pull request" compare view
-  echo 'Opening compare on Github...'
-  open "https://github.com/$(gh_remote_path)/compare/$(current_branch)?expand=1"
-}
-function gpu() { # Push upstream
-  git push --set-upstream origin `current_branch`
-}
-
-function mkd() { # Create a new directory and enter it
-  mkdir -p "$@" && cd "$_";
-}
-function loop() { # Repeats a given command forever
-  local i=2 t=1 cond
-
-  [ -z ${1//[0-9]/} ] && i=$1 && shift
-  [ -z ${1//[0-9]/} ] && t=$1 && shift && cond=1
-  while [ $t -gt 0 ]; do
-    sleep $i
-    [ $cond ] && : $[--t]
-    $@
-  done
-}
-function server() { # Create webserver from current directory
-  local port="${1:-8000}";
-  sleep 1 && open "http://localhost:${port}/" &
-  # Set the default Content-Type to `text/plain` instead of `application/octet-stream`
-  # And serve everything as UTF-8 (although not technically correct, this doesn’t break anything for binary files)
-  python -c $'import SimpleHTTPServer;\nmap = SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map;\nmap[""] = "text/plain";\nfor key, value in map.items():\n\tmap[key] = value + ";charset=UTF-8";\nSimpleHTTPServer.test();' "$port";
-}
-
-function nuke() { # Straight up murders all processes matching first arg
-  ps ax | grep $1 | awk '{print $1}' | xargs kill -9
-}
-function politely_nuke() { # As above but nicely
-  ps ax | grep $1 | awk '{print $1}' | xargs kill
-}
-function smart_bomb() { # Don't use this
-  killall -15 $1 2> /dev/null || killall -2 $1 2> /dev/null || killall -1 $1 2> /dev/null || killall -9 $1 2> /dev/null
-}
-function clear_port() { # Finds whatever is using a given port (except chrome) and kills it
-  lsof -t -i tcp:$1 | ag -v "$(ps aux|ag Chrome|tr -s ' '|cut -d ' ' -f 2|fmt -1024|tr ' ' '|')"| xargs kill -9
-}
-
-function v() { # Use fasd to open a file in vim from anywhere
-  nvim `f "$1" | awk "{print $2}"`
-}
-
-credhub-get() {
-  credhub get -n `credhub find -n "$1" | grep "name" | head -n 1 | sed 's/- name: //'`
 }
 
 main
