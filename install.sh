@@ -34,6 +34,7 @@ brew bundle --global
 brew bundle cleanup
 
 echo "Add java versions to jenv"
+eval "$(jenv init -)"
 mkdir -p ~/.jenv/versions
 jenv add /Library/Java/JavaVirtualMachines/jdk1.8.0_192.jdk/Contents/Home/
 jenv add /Library/Java/JavaVirtualMachines/openjdk-11.0.1.jdk/Contents/Home

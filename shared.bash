@@ -360,3 +360,4 @@ set-git-keys() {
 main
 unset -f main
 export PATH="/usr/local/opt/mysql@5.7/bin:$PATH"
+eval "$(jenv init -)"
