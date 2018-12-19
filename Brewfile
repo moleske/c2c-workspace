@@ -32,6 +32,7 @@ brew 'lastpass-cli', args: ['with-pinentry']
 brew 'libtool'
 brew 'mysql'
 brew 'neovim'
+brew 'nvm'
 brew 'openssl'
 brew 'packer'
 brew 'pkg-config'
