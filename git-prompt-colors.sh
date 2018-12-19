@@ -1,7 +1,7 @@
 override_git_prompt_colors() {
   GIT_PROMPT_THEME_NAME="Custom"
 
-  GIT_DUET_INITIALS="\$(echo \$(git config --get-regexp ^duet.env.git-.*-name | sed -e 's/^.*-name //' | tr 'A-Z' 'a-z' | sed -e 's/\([a-z]\)[^ +]*./\1/g' ) | sed -e 's/ /+/')"
+  GIT_DUET_INITIALS="\$(echo \$(git config --get-regexp ^git-together\.active | sed -e 's/^.*active //') | sed -e 's/ /+/')"
   GIT_PAIR=${GIT_DUET_INITIALS:-`git config user.initials | sed 's% %+%'`}
 
   DateTime="\$(date +'%Y-%m-%d %H:%M')"
