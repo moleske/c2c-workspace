@@ -1,4 +1,6 @@
 [git-together]
 	domain = pivotal.io
 [git-together "authors"]
-	mo = "Michael Oleske; moleske"
+  mo = "Michael Oleske; moleske"
+  bb = "Blake Bender; bbender"
+  mr = "Matthew Reddington; mreddington"
